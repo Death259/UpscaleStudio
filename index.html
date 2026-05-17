@@ -671,6 +671,7 @@
 
 <!-- All dependencies are local — no internet required after initial font load -->
 <script src="tf.min.js"></script>
+<script>window.require = function(m) { if (m === '@tensorflow/tfjs') return window.tf; throw new Error('Module not found: ' + m); };</script>
 <script src="upscale-bundle.min.js"></script>
 
 <script>
