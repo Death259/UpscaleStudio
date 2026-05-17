@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Upscale Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0e0f11;
+    --surface: #16181c;
+    --surface2: #1e2128;
+    --border: #2a2d35;
+    --accent: #d4f74b;
+    --accent-dim: rgba(212,247,75,0.12);
+    --accent-glow: rgba(212,247,75,0.25);
+    --text: #f0f1f3;
+    --text-muted: #6b7280;
+    --text-dim: #9ca3af;
+    --warn: #f59e0b;
+    --warn-dim: rgba(245,158,11,0.12);
+    --error: #ef4444;
+    --error-dim: rgba(239,68,68,0.12);
+    --radius: 12px;
+    --radius-lg: 20px;
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    overflow-x: hidden;
+  }
+
+  body {
+    min-height: 100vh;
+    background-image:
+      radial-gradient(ellipse 60% 40% at 80% 10%, rgba(212,247,75,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 30% at 10% 90%, rgba(100,120,255,0.05) 0%, transparent 50%);
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px 40px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: rgba(14,15,17,0.85);
+    backdrop-filter: blur(12px);
+    z-index: 100;
+  }
+
+  .logo { display: flex; align-items: center; gap: 12px; }
+
+  .logo-mark {
+    width: 36px; height: 36px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .logo-mark svg { width: 20px; height: 20px; }
+
+  .logo-text { font-size: 1.1rem; font-weight: 800; letter-spacing: -0.02em; }
+  .logo-text span { color: var(--accent); }
+
+  .badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 4px 10px;
+    border-radius: 100px;
+    letter-spacing: 0.05em;
+  }
+
+  main {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    animation: fadeUp 0.4s ease both;
+  }
+
+  .card:nth-child(1) { animation-delay: 0.05s; }
+  .card:nth-child(2) { animation-delay: 0.12s; }
+  .card:nth-child(3) { animation-delay: 0.18s; }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px 28px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .step-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: var(--accent);
+    background: var(--accent-dim);
+    border: 1px solid rgba(212,247,75,0.2);
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .card-title { font-size: 0.95rem; font-weight: 700; letter-spacing: -0.01em; }
+  .card-body { padding: 28px; }
+
+  /* Drop zone */
+  #drop-zone {
+    display: block;
+    width: 100%;
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 56px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.25s;
+    position: relative;
+    overflow: hidden;
+    box-sizing: border-box;
+  }
+
+  #drop-zone::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: var(--accent-dim);
+    opacity: 0;
+    transition: opacity 0.25s;
+  }
+
+  #drop-zone:hover, #drop-zone.drag-over { border-color: var(--accent); }
+  #drop-zone:hover::before, #drop-zone.drag-over::before { opacity: 1; }
+
+  .drop-icon {
+    width: 52px; height: 52px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 20px;
+    transition: all 0.25s;
+  }
+
+  #drop-zone:hover .drop-icon { background: var(--accent-dim); border-color: rgba(212,247,75,0.3); }
+  .drop-icon svg { width: 24px; height: 24px; color: var(--text-muted); }
+  #drop-zone:hover .drop-icon svg { color: var(--accent); }
+
+  .drop-title { font-size: 1rem; font-weight: 700; margin-bottom: 6px; }
+  .drop-sub { font-size: 0.82rem; color: var(--text-muted); font-family: 'DM Mono', monospace; }
+
+  .drop-btn {
+    display: inline-block;
+    margin-top: 20px;
+    padding: 10px 22px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.82rem; font-weight: 600;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .drop-btn:hover { border-color: var(--accent); color: var(--accent); }
+  #file-input { display: none; }
+
+  /* Preview */
+  #preview-wrap { display: none; gap: 20px; align-items: flex-start; }
+  #preview-wrap.show { display: flex; }
+
+  #preview-thumb {
+    width: 120px; height: 90px;
+    object-fit: cover;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .preview-info { flex: 1; }
+  .preview-filename { font-size: 0.95rem; font-weight: 700; margin-bottom: 6px; word-break: break-all; }
+  .preview-meta { font-family: 'DM Mono', monospace; font-size: 0.75rem; color: var(--text-muted); line-height: 1.8; }
+  .preview-meta span { color: var(--text-dim); }
+
+  .btn-ghost {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.78rem; font-weight: 600;
+    color: var(--text-muted);
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 7px 14px;
+    cursor: pointer;
+    margin-top: 12px;
+    transition: all 0.2s;
+  }
+
+  .btn-ghost:hover { border-color: var(--error); color: var(--error); }
+
+  /* Target size */
+  .size-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+
+  .size-field { display: flex; flex-direction: column; gap: 6px; }
+
+  .size-field label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem; color: var(--text-muted);
+    letter-spacing: 0.08em; text-transform: uppercase;
+  }
+
+  .size-field input {
+    width: 130px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.9rem; color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .size-field input:focus { border-color: var(--accent); }
+  .size-field input::placeholder { color: var(--text-muted); }
+  .size-x { font-size: 1.2rem; color: var(--text-muted); margin-top: 22px; font-weight: 700; }
+
+  /* Analysis box */
+  #analysis-box {
+    display: none;
+    margin-top: 20px;
+    padding: 16px 20px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    line-height: 1.9;
+  }
+
+  #analysis-box.show { display: block; }
+  #analysis-box.warn { border-color: rgba(245,158,11,0.4); background: var(--warn-dim); }
+  #analysis-box.error { border-color: rgba(239,68,68,0.4); background: var(--error-dim); }
+  #analysis-box.ok { border-color: rgba(212,247,75,0.3); background: var(--accent-dim); }
+
+  .analysis-row { display: flex; justify-content: space-between; gap: 16px; }
+  .analysis-label { color: var(--text-muted); }
+  .analysis-val { color: var(--text); font-weight: 500; }
+  .analysis-val.accent { color: var(--accent); }
+  .analysis-val.warn { color: var(--warn); }
+  .analysis-val.error { color: var(--error); }
+
+  .analysis-note {
+    margin-top: 10px; padding-top: 10px;
+    border-top: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 0.74rem; line-height: 1.6;
+  }
+
+  /* Primary button */
+  .btn-primary {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    width: 100%;
+    padding: 16px;
+    background: var(--accent);
+    color: #0e0f11;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.95rem; font-weight: 800;
+    border: none; border-radius: 10px;
+    cursor: pointer;
+    letter-spacing: -0.01em;
+    margin-top: 24px;
+    transition: all 0.2s;
+  }
+
+  .btn-primary:hover { background: #c8ef3a; box-shadow: 0 0 30px var(--accent-glow); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
+  .btn-primary svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+  /* Progress */
+  #progress-wrap { display: none; flex-direction: column; gap: 12px; margin-top: 24px; }
+  #progress-wrap.show { display: flex; }
+
+  .progress-header { display: flex; justify-content: space-between; align-items: center; font-family: 'DM Mono', monospace; font-size: 0.75rem; }
+  .progress-label { color: var(--text-dim); }
+  .progress-pct { color: var(--accent); font-weight: 500; }
+
+  .progress-track { height: 4px; background: var(--surface2); border-radius: 100px; overflow: hidden; }
+  .progress-bar { height: 100%; background: var(--accent); border-radius: 100px; width: 0%; transition: width 0.3s ease; box-shadow: 0 0 10px var(--accent-glow); }
+  .progress-sub { font-family: 'DM Mono', monospace; font-size: 0.72rem; color: var(--text-muted); }
+
+  /* Crop stage */
+  .crop-toolbar { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+
+  .toggle-wrap { display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; }
+  .toggle-wrap input[type="checkbox"] { display: none; }
+
+  .toggle-track {
+    width: 40px; height: 22px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    position: relative;
+    transition: all 0.2s;
+  }
+
+  .toggle-wrap input:checked + .toggle-track { background: var(--accent); border-color: var(--accent); }
+
+  .toggle-thumb {
+    position: absolute;
+    width: 16px; height: 16px;
+    background: var(--text-muted);
+    border-radius: 50%;
+    top: 2px; left: 2px;
+    transition: all 0.2s;
+  }
+
+  .toggle-wrap input:checked + .toggle-track .toggle-thumb { left: 20px; background: #0e0f11; }
+  .toggle-label { font-size: 0.82rem; font-weight: 600; color: var(--text-dim); }
+
+  .crop-container {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: #080809;
+    user-select: none;
+    max-height: 520px;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  #upscaled-canvas { display: block; max-width: 100%; max-height: 520px; object-fit: contain; }
+
+  #crop-overlay { position: absolute; inset: 0; pointer-events: none; }
+
+  #crop-box {
+    position: absolute;
+    border: 2px solid var(--accent);
+    box-shadow: 0 0 0 9999px rgba(0,0,0,0.55);
+    cursor: move;
+    pointer-events: all;
+  }
+
+  .crop-handle {
+    position: absolute;
+    width: 10px; height: 10px;
+    background: var(--accent);
+    border-radius: 2px;
+    display: none;
+  }
+
+  .crop-handle.tl { top:-5px; left:-5px; cursor:nw-resize; }
+  .crop-handle.tr { top:-5px; right:-5px; cursor:ne-resize; }
+  .crop-handle.bl { bottom:-5px; left:-5px; cursor:sw-resize; }
+  .crop-handle.br { bottom:-5px; right:-5px; cursor:se-resize; }
+  .crop-handle.tc { top:-5px; left:50%; transform:translateX(-50%); cursor:n-resize; }
+  .crop-handle.bc { bottom:-5px; left:50%; transform:translateX(-50%); cursor:s-resize; }
+  .crop-handle.ml { top:50%; left:-5px; transform:translateY(-50%); cursor:w-resize; }
+  .crop-handle.mr { top:50%; right:-5px; transform:translateY(-50%); cursor:e-resize; }
+
+  .crop-dims {
+    position: absolute;
+    bottom: -26px; left: 50%;
+    transform: translateX(-50%);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem; color: var(--accent);
+    white-space: nowrap;
+    background: rgba(14,15,17,0.85);
+    padding: 2px 8px; border-radius: 4px;
+  }
+
+  .crop-info { margin-top: 36px; display: flex; gap: 12px; flex-wrap: wrap; }
+
+  .info-chip {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem; color: var(--text-muted);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 6px 12px; border-radius: 6px;
+  }
+
+  .info-chip span { color: var(--text-dim); }
+
+  .btn-download {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    width: 100%; padding: 16px;
+    background: transparent; color: var(--accent);
+    font-family: 'Syne', sans-serif;
+    font-size: 0.95rem; font-weight: 800;
+    border: 2px solid var(--accent); border-radius: 10px;
+    cursor: pointer;
+    letter-spacing: -0.01em;
+    margin-top: 20px;
+    transition: all 0.2s;
+  }
+
+  .btn-download:hover { background: var(--accent); color: #0e0f11; box-shadow: 0 0 30px var(--accent-glow); }
+  .btn-download svg { width: 18px; height: 18px; }
+
+  .hidden { display: none !important; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid rgba(14,15,17,0.3);
+    border-top-color: #0e0f11;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-mark">
+      <svg viewBox="0 0 20 20" fill="none">
+        <path d="M3 17L9 11M9 11L6 11M9 11L9 14" stroke="#0e0f11" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M17 3L11 9M11 9L14 9M11 9L11 6" stroke="#0e0f11" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <span class="logo-text">Upscale<span>Studio</span></span>
+  </div>
+  <div class="badge">AI · ESRGAN · OFFLINE</div>
+</header>
+
+<main>
+
+  <!-- STEP 1 -->
+  <div class="card">
+    <div class="card-header">
+      <div class="step-num">01</div>
+      <div class="card-title">Upload Image</div>
+    </div>
+    <div class="card-body">
+      <label id="drop-zone">
+        <input type="file" id="file-input" accept="image/*" style="display:none" />
+        <div class="drop-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="drop-title">Tap or drop an image here</div>
+        <div class="drop-sub">PNG, JPG, WEBP, BMP — any size</div>
+        <span class="drop-btn">Browse files</span>
+      </label>
+      <div id="preview-wrap">
+        <img id="preview-thumb" src="" alt="preview" />
+        <div class="preview-info">
+          <div class="preview-filename" id="preview-name">—</div>
+          <div class="preview-meta">
+            Dimensions: <span id="preview-dims">—</span><br/>
+            File size: <span id="preview-size">—</span>
+          </div>
+          <button class="btn-ghost" id="btn-change">✕ Remove &amp; change</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="card">
+    <div class="card-header">
+      <div class="step-num">02</div>
+      <div class="card-title">Set Target Size</div>
+    </div>
+    <div class="card-body">
+      <div class="size-row">
+        <div class="size-field">
+          <label>Width (px)</label>
+          <input type="number" id="target-w" placeholder="e.g. 3840" min="1" />
+        </div>
+        <div class="size-x">×</div>
+        <div class="size-field">
+          <label>Height (px)</label>
+          <input type="number" id="target-h" placeholder="e.g. 2160" min="1" />
+        </div>
+      </div>
+
+      <div id="analysis-box">
+        <div class="analysis-row"><span class="analysis-label">Original</span><span class="analysis-val" id="an-original">—</span></div>
+        <div class="analysis-row"><span class="analysis-label">Target</span><span class="analysis-val" id="an-target">—</span></div>
+        <div class="analysis-row"><span class="analysis-label">Required scale</span><span class="analysis-val" id="an-required">—</span></div>
+        <div class="analysis-row"><span class="analysis-label">Upscale pass</span><span class="analysis-val accent" id="an-pass">—</span></div>
+        <div class="analysis-note" id="an-note"></div>
+      </div>
+
+      <button class="btn-primary" id="btn-upscale" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M5 3l14 9-14 9V3z" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Start Upscaling
+      </button>
+
+      <div id="progress-wrap">
+        <div class="progress-header">
+          <span class="progress-label" id="progress-label">Processing…</span>
+          <span class="progress-pct" id="progress-pct">0%</span>
+        </div>
+        <div class="progress-track"><div class="progress-bar" id="progress-bar"></div></div>
+        <div class="progress-sub">This may take a moment depending on image size and your device.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="card hidden" id="card-crop">
+    <div class="card-header">
+      <div class="step-num">03</div>
+      <div class="card-title">Crop &amp; Download</div>
+    </div>
+    <div class="card-body">
+      <div class="crop-toolbar">
+        <label class="toggle-wrap">
+          <input type="checkbox" id="free-crop-toggle" />
+          <div class="toggle-track"><div class="toggle-thumb"></div></div>
+          <span class="toggle-label">Free crop</span>
+        </label>
+        <span style="font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--text-muted);">
+          Drag the frame to reposition · enable Free crop to resize handles
+        </span>
+      </div>
+
+      <div class="crop-container" id="crop-container">
+        <canvas id="upscaled-canvas"></canvas>
+        <div id="crop-overlay">
+          <div id="crop-box">
+            <div class="crop-handle tl" data-handle="tl"></div>
+            <div class="crop-handle tr" data-handle="tr"></div>
+            <div class="crop-handle bl" data-handle="bl"></div>
+            <div class="crop-handle br" data-handle="br"></div>
+            <div class="crop-handle tc" data-handle="tc"></div>
+            <div class="crop-handle bc" data-handle="bc"></div>
+            <div class="crop-handle ml" data-handle="ml"></div>
+            <div class="crop-handle mr" data-handle="mr"></div>
+            <div class="crop-dims" id="crop-dims">0 × 0</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="crop-info">
+        <div class="info-chip">Upscaled: <span id="info-upscaled">—</span></div>
+        <div class="info-chip">Crop output: <span id="info-crop">—</span></div>
+        <div class="info-chip">Pass used: <span id="info-scale">—</span></div>
+      </div>
+
+      <button class="btn-download" id="btn-download">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Crop &amp; Download
+      </button>
+    </div>
+  </div>
+
+</main>
+
+<canvas id="work-canvas" style="display:none"></canvas>
+
+<!-- All dependencies are local — no internet required after initial font load -->
+<script src="tf.min.js"></script>
+<script src="upscale-bundle.min.js"></script>
+
+<script>
+// ── STATE ─────────────────────────────────────────────────────────────────
+const state = {
+  file: null, imgEl: null,
+  origW: 0, origH: 0,
+  targetW: 0, targetH: 0,
+  scalePass: 0,
+};
+
+const crop = { x: 0, y: 0, w: 0, h: 0 };
+let displayRatio = 1;
+
+// ── ELEMENTS ──────────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const dropZone      = $('drop-zone');
+const fileInput     = $('file-input');
+const previewWrap   = $('preview-wrap');
+const previewThumb  = $('preview-thumb');
+const previewName   = $('preview-name');
+const previewDims   = $('preview-dims');
+const previewSize   = $('preview-size');
+const btnChange     = $('btn-change');
+const targetW       = $('target-w');
+const targetH       = $('target-h');
+const analysisBox   = $('analysis-box');
+const anOriginal    = $('an-original');
+const anTarget      = $('an-target');
+const anRequired    = $('an-required');
+const anPass        = $('an-pass');
+const anNote        = $('an-note');
+const btnUpscale    = $('btn-upscale');
+const progressWrap  = $('progress-wrap');
+const progressBar   = $('progress-bar');
+const progressPct   = $('progress-pct');
+const progressLabel = $('progress-label');
+const cardCrop      = $('card-crop');
+const upscaledCanvas= $('upscaled-canvas');
+const cropBox       = $('crop-box');
+const cropDims      = $('crop-dims');
+const freeCropToggle= $('free-crop-toggle');
+const infoUpscaled  = $('info-upscaled');
+const infoCrop      = $('info-crop');
+const infoScale     = $('info-scale');
+const btnDownload   = $('btn-download');
+const workCanvas    = $('work-canvas');
+
+// ── UPLOAD ────────────────────────────────────────────────────────────────
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag-over'); handleFile(e.dataTransfer.files[0]); });
+fileInput.addEventListener('change', () => handleFile(fileInput.files[0]));
+btnChange.addEventListener('click', resetUpload);
+
+function handleFile(file) {
+  if (!file || !file.type.startsWith('image/')) return;
+  state.file = file;
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => {
+    state.imgEl = img;
+    state.origW = img.naturalWidth;
+    state.origH = img.naturalHeight;
+    previewThumb.src = url;
+    previewName.textContent = file.name;
+    previewDims.textContent = `${img.naturalWidth} × ${img.naturalHeight} px`;
+    previewSize.textContent = formatBytes(file.size);
+    dropZone.style.display = 'none';
+    previewWrap.classList.add('show');
+    analyzeTarget();
+  };
+  img.src = url;
+}
+
+function resetUpload() {
+  state.file = null; state.imgEl = null;
+  fileInput.value = '';
+  previewWrap.classList.remove('show');
+  dropZone.style.display = '';
+  analysisBox.className = '';
+  btnUpscale.disabled = true;
+  progressWrap.classList.remove('show');
+  cardCrop.classList.add('hidden');
+  targetW.value = ''; targetH.value = '';
+}
+
+// ── ANALYSIS ──────────────────────────────────────────────────────────────
+targetW.addEventListener('input', analyzeTarget);
+targetH.addEventListener('input', analyzeTarget);
+
+function analyzeTarget() {
+  const tw = parseInt(targetW.value);
+  const th = parseInt(targetH.value);
+  state.targetW = tw; state.targetH = th;
+
+  if (!state.imgEl || !tw || !th || tw < 1 || th < 1) {
+    analysisBox.className = '';
+    btnUpscale.disabled = true;
+    return;
+  }
+
+  const scaleNeeded = Math.max(tw / state.origW, th / state.origH);
+
+  let pass;
+  if      (scaleNeeded <= 2) pass = 2;
+  else if (scaleNeeded <= 4) pass = 4;
+  else if (scaleNeeded <= 8) pass = 8;
+  else                       pass = 0;
+
+  anOriginal.textContent = `${state.origW} × ${state.origH} px`;
+  anTarget.textContent   = `${tw} × ${th} px`;
+  anRequired.textContent = `${scaleNeeded.toFixed(2)}×`;
+
+  if (pass === 0) {
+    anPass.textContent = 'Cannot reach target';
+    anPass.className   = 'analysis-val error';
+    anNote.textContent = `⚠ Even an 8× pass (${state.origW*8} × ${state.origH*8} px) can't reach your target. Please use a larger source image or reduce the target size.`;
+    analysisBox.className = 'show error';
+    btnUpscale.disabled = true;
+    state.scalePass = 0;
+    return;
+  }
+
+  state.scalePass = pass;
+  const upW = state.origW * pass;
+  const upH = state.origH * pass;
+
+  anPass.textContent = `${pass}× ESRGAN  →  ${upW} × ${upH} px`;
+  anPass.className   = 'analysis-val accent';
+
+  const notes = [];
+  const aspectDiff = Math.abs((state.origW / state.origH) - (tw / th));
+  if (aspectDiff > 0.02) {
+    notes.push('ℹ Your target aspect ratio differs from the original — the crop frame will be pre-set to your target dimensions, and you can drag it to choose which area to keep.');
+  }
+  if (upW < tw || upH < th) {
+    notes.push(`⚠ The upscaled image (${upW} × ${upH} px) falls slightly short in one dimension. The crop will be capped to the available size.`);
+    analysisBox.className = 'show warn';
+  } else {
+    analysisBox.className = 'show ok';
+  }
+  anNote.textContent = notes.join(' ');
+  btnUpscale.disabled = false;
+}
+
+// ── UPSCALING ─────────────────────────────────────────────────────────────
+btnUpscale.addEventListener('click', runUpscale);
+
+async function runUpscale() {
+  btnUpscale.disabled = true;
+  progressWrap.classList.add('show');
+  cardCrop.classList.add('hidden');
+  progressLabel.style.color = '';
+
+  try {
+    const scale = state.scalePass;
+    // We do repeated 2× passes: scale=2→1 pass, scale=4→2 passes, scale=8→3 passes
+    const passes = Math.log2(scale);
+
+    let currentTensor = tf.browser.fromPixels(state.imgEl);
+
+    for (let i = 0; i < passes; i++) {
+      const label   = passes === 1 ? 'Upscaling with ESRGAN…' : `ESRGAN pass ${i + 1} of ${passes}…`;
+      const startPct = (i / passes) * 90;
+      const endPct   = ((i + 1) / passes) * 90;
+
+      setProgress(startPct, label);
+
+      // Always use the 2x model for each pass
+      const upscaler = new Upscaler({
+        model: {
+          ...ESRGANSlim2x,
+          _internals: { ...ESRGANSlim2x._internals, path: 'models/x2/model.json' }
+        }
+      });
+
+      const upscaled = await upscaler.upscale(currentTensor, {
+        patchSize: 64,
+        padding: 2,
+        progress: pct => {
+          setProgress(startPct + (endPct - startPct) * (pct / 100), label);
+        }
+      });
+
+      currentTensor.dispose();
+      currentTensor = upscaled;
+    }
+
+    setProgress(95, 'Rendering to canvas…');
+
+    const [h, w] = [currentTensor.shape[0], currentTensor.shape[1]];
+    workCanvas.width  = w;
+    workCanvas.height = h;
+    await tf.browser.toPixels(currentTensor, workCanvas);
+    currentTensor.dispose();
+
+    state.upscaledW = w;
+    state.upscaledH = h;
+
+    setProgress(100, 'Done!');
+    setTimeout(() => {
+      progressWrap.classList.remove('show');
+      showCropStage();
+    }, 600);
+
+  } catch (err) {
+    console.error(err);
+    progressLabel.textContent = '✕ Error: ' + err.message;
+    progressLabel.style.color = 'var(--error)';
+    btnUpscale.disabled = false;
+  }
+}
+
+function setProgress(pct, label) {
+  pct = Math.min(100, Math.round(pct));
+  progressBar.style.width = pct + '%';
+  progressPct.textContent = pct + '%';
+  progressLabel.textContent = label;
+}
+
+// ── CROP STAGE ────────────────────────────────────────────────────────────
+function showCropStage() {
+  cardCrop.classList.remove('hidden');
+  cardCrop.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  const container = document.getElementById('crop-container');
+  const maxW = container.clientWidth || 900;
+  const maxH = 520;
+  const ratio = Math.min(maxW / state.upscaledW, maxH / state.upscaledH, 1);
+  displayRatio = ratio;
+
+  upscaledCanvas.width  = state.upscaledW;
+  upscaledCanvas.height = state.upscaledH;
+  upscaledCanvas.style.width  = Math.round(state.upscaledW * ratio) + 'px';
+  upscaledCanvas.style.height = Math.round(state.upscaledH * ratio) + 'px';
+
+  const ctx = upscaledCanvas.getContext('2d');
+  ctx.drawImage(workCanvas, 0, 0);
+
+  infoUpscaled.textContent = `${state.upscaledW} × ${state.upscaledH} px`;
+  infoScale.textContent    = `${state.scalePass}×`;
+
+  const cropWpx = Math.min(state.targetW, state.upscaledW);
+  const cropHpx = Math.min(state.targetH, state.upscaledH);
+
+  crop.x = ((state.upscaledW - cropWpx) / 2) * ratio;
+  crop.y = ((state.upscaledH - cropHpx) / 2) * ratio;
+  crop.w = cropWpx * ratio;
+  crop.h = cropHpx * ratio;
+
+  applyCropBox();
+  setupCropInteraction();
+}
+
+function applyCropBox() {
+  cropBox.style.left   = crop.x + 'px';
+  cropBox.style.top    = crop.y + 'px';
+  cropBox.style.width  = crop.w + 'px';
+  cropBox.style.height = crop.h + 'px';
+
+  const rw = Math.round(crop.w / displayRatio);
+  const rh = Math.round(crop.h / displayRatio);
+  cropDims.textContent = `${rw} × ${rh} px`;
+  infoCrop.textContent = `${rw} × ${rh} px`;
+}
+
+// ── CROP INTERACTION ──────────────────────────────────────────────────────
+let cropInteractionSetup = false;
+
+function setupCropInteraction() {
+  if (cropInteractionSetup) return;
+  cropInteractionSetup = true;
+
+  freeCropToggle.addEventListener('change', () => {
+    const handles = cropBox.querySelectorAll('.crop-handle');
+    handles.forEach(h => h.style.display = freeCropToggle.checked ? 'block' : 'none');
+  });
+
+  let dragging = false, resizing = false, handle = null;
+  let startX, startY, startCrop;
+
+  cropBox.addEventListener('mousedown', e => {
+    if (e.target.classList.contains('crop-handle')) return;
+    dragging = true;
+    startX = e.clientX; startY = e.clientY;
+    startCrop = { ...crop };
+    e.preventDefault();
+  });
+
+  cropBox.querySelectorAll('.crop-handle').forEach(el => {
+    el.addEventListener('mousedown', e => {
+      resizing = true;
+      handle = el.dataset.handle;
+      startX = e.clientX; startY = e.clientY;
+      startCrop = { ...crop };
+      e.preventDefault();
+      e.stopPropagation();
+    });
+  });
+
+  document.addEventListener('mousemove', e => {
+    if (!dragging && !resizing) return;
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+    const dispW = upscaledCanvas.offsetWidth;
+    const dispH = upscaledCanvas.offsetHeight;
+
+    if (dragging) {
+      crop.x = Math.max(0, Math.min(startCrop.x + dx, dispW - crop.w));
+      crop.y = Math.max(0, Math.min(startCrop.y + dy, dispH - crop.h));
+    }
+
+    if (resizing && freeCropToggle.checked) {
+      let { x, y, w, h } = startCrop;
+      const MIN = 20;
+      if (handle.includes('r')) { w = Math.max(MIN, startCrop.w + dx); }
+      if (handle.includes('l')) { const nw = Math.max(MIN, startCrop.w - dx); x = startCrop.x + (startCrop.w - nw); w = nw; }
+      if (handle.includes('b')) { h = Math.max(MIN, startCrop.h + dy); }
+      if (handle.includes('t')) { const nh = Math.max(MIN, startCrop.h - dy); y = startCrop.y + (startCrop.h - nh); h = nh; }
+      if (x < 0) { w += x; x = 0; }
+      if (y < 0) { h += y; y = 0; }
+      if (x + w > dispW) w = dispW - x;
+      if (y + h > dispH) h = dispH - y;
+      crop.x = x; crop.y = y; crop.w = w; crop.h = h;
+    }
+
+    applyCropBox();
+  });
+
+  document.addEventListener('mouseup', () => { dragging = false; resizing = false; handle = null; });
+}
+
+// ── DOWNLOAD ──────────────────────────────────────────────────────────────
+btnDownload.addEventListener('click', () => {
+  const rx = Math.round(crop.x / displayRatio);
+  const ry = Math.round(crop.y / displayRatio);
+  const rw = Math.round(crop.w / displayRatio);
+  const rh = Math.round(crop.h / displayRatio);
+
+  const out = document.createElement('canvas');
+  out.width = rw; out.height = rh;
+  out.getContext('2d').drawImage(workCanvas, rx, ry, rw, rh, 0, 0, rw, rh);
+
+  const link = document.createElement('a');
+  const base = (state.file?.name || 'image').replace(/\.[^.]+$/, '');
+  link.download = `${base}_${state.scalePass}x_${rw}x${rh}.png`;
+  link.href = out.toDataURL('image/png');
+  link.click();
+});
+
+// ── UTILS ─────────────────────────────────────────────────────────────────
+function formatBytes(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+  return (b / 1048576).toFixed(1) + ' MB';
+}
+</script>
+</body>
+</html>
