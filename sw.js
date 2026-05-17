@@ -1,4 +1,4 @@
-const CACHE = 'upscale-studio-v1';
+const CACHE = 'upscale-studio-v2';
 const ASSETS = [
   './',
   './index.html',
