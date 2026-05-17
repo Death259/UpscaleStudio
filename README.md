@@ -6,7 +6,9 @@ A fully client-side, offline-capable AI image upscaler built on [ESRGAN](https:/
 
 - **AI-powered upscaling** — Uses ESRGAN Slim models for high-quality super-resolution
 - **2×, 4×, and 8× scale passes** — Automatically selects the minimum number of passes needed to reach your target size
-- **Crop & export** — Interactive crop frame on the upscaled result; drag to reposition, enable free-crop to resize handles
+- **Crop & export** — Interactive crop frame on the upscaled result; drag to reposition, enable free-crop to resize handles; works on touch and mouse
+- **PNG or JPEG export** — Toggle between lossless PNG and JPEG with an adjustable quality slider (1–100%)
+- **PWA / installable** — Service worker caches all assets for true offline use; add to home screen on mobile or install from desktop Chrome
 - **Fully offline after load** — All JS and model weights are bundled locally; no CDN dependencies at runtime
 - **No backend required** — Runs entirely in the browser via WebGL-accelerated TensorFlow.js
 
@@ -27,6 +29,9 @@ The app analyses your source dimensions versus target dimensions, picks the smal
 ```
 upscale-studio/
 ├── index.html                   ← Single-file app (HTML + CSS + JS)
+├── manifest.json                ← PWA manifest (name, icons, theme colour)
+├── sw.js                        ← Service worker — cache-first offline support
+├── icon.svg                     ← App icon for PWA install / home screen
 ├── tf.min.js                    ← TensorFlow.js (bundled locally)
 ├── upscale-bundle.min.js        ← Upscaler.js + ESRGAN config (bundled locally)
 ├── upscaler.min.js              ← Upscaler.js runtime
@@ -82,7 +87,7 @@ The only external dependency is the Google Fonts stylesheet (`fonts.googleapis.c
 
 1. **Step 01 — Upload Image**: Drag-and-drop or click to browse. Supports PNG, JPG, WEBP, BMP. A thumbnail and file metadata are shown after selection.
 2. **Step 02 — Set Target Size**: Enter the desired output width × height in pixels. The analysis panel shows the required scale factor, which ESRGAN pass will be used, and any aspect-ratio or size warnings. Click **Start Upscaling** when ready.
-3. **Step 03 — Crop & Download**: After upscaling completes a canvas shows the result. Drag the yellow crop frame to choose the region to export. Toggle **Free crop** to enable resize handles. Click **Crop & Download** to save a PNG named `<original>_<scale>x_<WxH>.png`.
+3. **Step 03 — Crop & Download**: After upscaling completes a canvas shows the result. Drag the yellow crop frame to choose the region to export (mouse and touch both work). Toggle **Free crop** to enable resize handles. Choose **PNG** (lossless) or **JPEG** (with a quality slider) then click **Crop & Download** to save the file named `<original>_<scale>x_<WxH>.<ext>`.
 
 ## Design Tokens
 
