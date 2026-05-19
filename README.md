@@ -1,5 +1,7 @@
 # Upscale Studio
 
+**Live demo:** https://death259.github.io/UpscaleStudio/
+
 A fully client-side, offline-capable AI image upscaler built on [ESRGAN](https://github.com/xinntao/ESRGAN) and [TensorFlow.js](https://www.tensorflow.org/js). Upload any image, set a target resolution, and the app runs AI upscaling directly in your browser — no server, no cloud, no data leaves your machine.
 
 ## Features
