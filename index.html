@@ -681,6 +681,7 @@ const state = {
   origW: 0, origH: 0,
   targetW: 0, targetH: 0,
   scalePass: 0,
+  directCrop: false,
 };
 
 const crop = { x: 0, y: 0, w: 0, h: 0 };
@@ -749,11 +750,13 @@ function handleFile(file) {
 
 function resetUpload() {
   state.file = null; state.imgEl = null;
+  state.directCrop = false;
   fileInput.value = '';
   previewWrap.classList.remove('show');
   dropZone.style.display = '';
   analysisBox.className = '';
   btnUpscale.disabled = true;
+  btnUpscale.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3l14 9-14 9V3z" stroke-linecap="round" stroke-linejoin="round"/></svg> Start Upscaling';
   progressWrap.classList.remove('show');
   cardCrop.classList.add('hidden');
   targetW.value = ''; targetH.value = '';
@@ -775,6 +778,23 @@ function analyzeTarget() {
   }
 
   const scaleNeeded = Math.max(tw / state.origW, th / state.origH);
+
+  if (scaleNeeded <= 1) {
+    state.directCrop = true;
+    anOriginal.textContent = `${state.origW} × ${state.origH} px`;
+    anTarget.textContent   = `${tw} × ${th} px`;
+    anRequired.textContent = `${scaleNeeded.toFixed(2)}×`;
+    anPass.textContent = 'Image already fits — crop directly';
+    anPass.className   = 'analysis-val accent';
+    anNote.textContent = `Your image (${state.origW} × ${state.origH} px) is already larger than the target. No upscaling needed.`;
+    analysisBox.className = 'show ok';
+    btnUpscale.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2v14a2 2 0 002 2h14M2 6h14a2 2 0 012 2v14" stroke-linecap="round" stroke-linejoin="round"/></svg> Crop to Size';
+    btnUpscale.disabled = false;
+    return;
+  }
+
+  state.directCrop = false;
+  btnUpscale.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3l14 9-14 9V3z" stroke-linecap="round" stroke-linejoin="round"/></svg> Start Upscaling';
 
   let pass;
   if      (scaleNeeded <= 2) pass = 2;
@@ -826,6 +846,18 @@ async function runUpscale() {
   progressWrap.classList.add('show');
   cardCrop.classList.add('hidden');
   progressLabel.style.color = '';
+
+  if (state.directCrop) {
+    setProgress(80, 'Preparing image…');
+    workCanvas.width  = state.origW;
+    workCanvas.height = state.origH;
+    workCanvas.getContext('2d').drawImage(state.imgEl, 0, 0);
+    state.upscaledW = state.origW;
+    state.upscaledH = state.origH;
+    setProgress(100, 'Ready!');
+    setTimeout(() => { progressWrap.classList.remove('show'); showCropStage(); }, 400);
+    return;
+  }
 
   try {
     const scale = state.scalePass;
@@ -913,7 +945,7 @@ function showCropStage() {
   ctx.drawImage(workCanvas, 0, 0);
 
   infoUpscaled.textContent = `${state.upscaledW} × ${state.upscaledH} px`;
-  infoScale.textContent    = `${state.scalePass}×`;
+  infoScale.textContent    = state.directCrop ? 'none' : `${state.scalePass}×`;
 
   const cropWpx = Math.min(state.targetW, state.upscaledW);
   const cropHpx = Math.min(state.targetH, state.upscaledH);
